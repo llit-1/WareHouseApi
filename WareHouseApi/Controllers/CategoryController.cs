@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Models.MSSQL;
+using System.Collections.Generic;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
 
@@ -45,22 +46,18 @@ namespace WareHouseApi.Controllers
 
         [HttpGet("childCategories")]
         // [Authorize]
-        public IActionResult ChildCategories(int i)
+        public IActionResult ChildCategories(int id)
         {
             List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.ToList();
             List<CategoriesHierarchy> categoriesHierarchies = new();
             foreach (var category in warehouseCategories)
-            { 
-            
+            {
+                if (category.Parent == id)
+                {
+                    categoriesHierarchies.Add(GetRecursiveChild(category.Id.Value, warehouseCategories));
+                }               
             }
-
-
-
-
-            return Ok(warehouseCategories);
-
-
-
+            return Ok(categoriesHierarchies);
         }
 
 
@@ -97,6 +94,32 @@ namespace WareHouseApi.Controllers
             return Ok();
         }
 
+
+        [HttpPatch("UpdateCategoryActual")]
+        public IActionResult UpdateCategoryActual(int? Id)
+        {
+            if (Id == null)
+            {
+                return BadRequest(new { message = "unavailable data" });
+            }
+            WarehouseCategories SQLWarehouseCategory = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == Id);
+            if (SQLWarehouseCategory == null)
+            {
+                return BadRequest(new { message = "unavailable id" });
+            }
+            if (SQLWarehouseCategory.Actual == 0)
+            {
+                SQLWarehouseCategory.Actual = 1;
+            }
+         else if (SQLWarehouseCategory.Actual == 1)
+            {
+                SQLWarehouseCategory.Actual = 0;
+            }
+            _rKNETDBContext.SaveChanges();
+            return Ok();
+        }
+
+
         [HttpDelete("DeleteCategory")]
         public IActionResult DeleteCategory(int id)
         {            
@@ -123,11 +146,29 @@ namespace WareHouseApi.Controllers
         }
 
 
+
+
+        private CategoriesHierarchy GetRecursiveChild(int id, List<WarehouseCategories> warehouseCategories)
+        { 
+         WarehouseCategories category = warehouseCategories.FirstOrDefault(c => c.Id == id);
+            CategoriesHierarchy categoriesHierarchy = new CategoriesHierarchy();
+            categoriesHierarchy.Id = id;
+            categoriesHierarchy.Name = category.Name;
+            categoriesHierarchy.Categories = new();
+            categoriesHierarchy.Actual = category.Actual;
+            List<WarehouseCategories> children = warehouseCategories.Where(c => c.Parent == id).ToList();
+            foreach (var item in children)
+            {
+                categoriesHierarchy.Categories.Add(GetRecursiveChild(item.Id.Value, warehouseCategories));
+            }
+            return categoriesHierarchy;
+        }
+
         private class CategoriesHierarchy
         {
             public int Id { get; set; }
             public string Name { get; set; } = "";
-            public CategoriesHierarchy? Categories { get; set; }
+            public List<CategoriesHierarchy> Categories { get; set; } = new();
             public int Actual { get; set; }
         }
     }

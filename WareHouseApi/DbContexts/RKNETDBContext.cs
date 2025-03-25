@@ -16,7 +16,7 @@ namespace WareHouseApi.DbContexts
         }
 
         public DbSet<WarehouseCategories> WarehouseCategories { get; set; } // Иерархия склада
-        public DbSet<Location> Location { get; set; } // Локация
+        public DbSet<Location> Locations { get; set; } // Локация
         public DbSet<WarehouseAction> WarehouseAction { get; set; } // Операции склада
         public DbSet<WarehouseObjects> WarehouseObjects { get; set; } // Объекты склада
         public DbSet<WarehouseTransfer> WarehouseTransfer { get; set; } // События склада

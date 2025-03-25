@@ -1,8 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Portal.Models.MSSQL;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WareHouseApi.Controllers
 {
@@ -18,22 +23,104 @@ namespace WareHouseApi.Controllers
 
         [HttpGet("GetObject")]
         // [Authorize]
-        public IActionResult GetObgect(string id)
+        public IActionResult GetObject(string id)
         {
-            WarehouseObjects warehouseObjects = _rKNETDBContext.WarehouseObjects.FirstOrDefault(c => c.Id == id);
-            return Ok(warehouseObjects);
+            WarehouseObjects? warehouseObject = _rKNETDBContext.WarehouseObjects
+                                                              .Include(c => c.WarehouseCategories)
+                                                              .FirstOrDefault();
+            warehouseObject.Id = null;
+            return Ok(warehouseObject);
         }
 
+        [HttpGet("GetNextCode")]
+        // [Authorize]
+        public IActionResult GetNextCode()
+        {
+            List<WarehouseObjects> warehouseObjects = _rKNETDBContext.WarehouseObjects.ToList();
+            byte[] nextCode = new byte[12];
+            if (warehouseObjects.Count == 0)
+            {
+                return Ok(ArrToString(nextCode));
+            }
+            WarehouseObjects max = GetMaxByteArray(warehouseObjects);
+            nextCode = max.Id;
+            for (int i = nextCode.Length-1; i >=0 ; i--)
+            {
+                nextCode[i]++;
+                if (nextCode[i] != 0)
+                {
+                    break;
+                }
+            }           
+            return Ok(ArrToString(nextCode));
+        }
 
         [HttpPost("SetObject")]
         // [Authorize]
-        public IActionResult SetObgect(WarehouseObjects warehouseObjects)
+        public IActionResult SetObject([FromBody] WarehouseObjectsJson warehouseObjectsJson)
         {
-            _rKNETDBContext.WarehouseObjects.Add(warehouseObjects);
+            WarehouseCategories? warehouseCategories = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id.Equals(warehouseObjectsJson.WarehouseCategories));
+            if (warehouseCategories == null)
+            {
+                return BadRequest(new { message = "unavailable warehouseCategory" }); 
+            }
+            WarehouseObjects warehouseObject = new WarehouseObjects();
+            warehouseObject.WarehouseCategories = warehouseCategories;
+            warehouseObject.Actual = 1;
+            warehouseObject.Id = Global.ToCode(warehouseObjectsJson.Id);
+            _rKNETDBContext.WarehouseObjects.Add(warehouseObject);
             _rKNETDBContext.SaveChanges();
             return Ok();
         }
-
+        private WarehouseObjects GetMaxByteArray(List<WarehouseObjects> warehouseObjects)
+        {
+            WarehouseObjects warehouseObject = warehouseObjects[0];
+            List<WarehouseObjects> forRemove = new List<WarehouseObjects>();
+            for (int i = 11; i >= 0; i--)
+            {
+                foreach (var item in warehouseObjects)
+                {
+                    if (item.Id[i] < warehouseObject.Id[i])
+                    {
+                        forRemove.Add(item);
+                    }
+                    if (item.Id[i] > warehouseObject.Id[i])
+                    {
+                        forRemove.Add(warehouseObject);
+                        warehouseObject = item;
+                    }
+                }
+                warehouseObjects.RemoveAll(u => forRemove.Contains(u));
+                if (warehouseObjects.Count == 1)
+                {
+                    return warehouseObjects[0];
+                }
+            }
+            return warehouseObjects[0];
+        }
+        private static string ArrToString(byte[] arr)
+        {
+            string ret = "";
+            foreach (var item in arr)
+            {
+                string number = item.ToString("X2");
+                if (number.Length == 1)
+                {
+                    number = "0" + number;
+                }
+                ret += number;
+            }
+            return ret;
+        }
 
     }
+    public class WarehouseObjectsJson
+    {
+        public string Id { get; set; }
+        public int WarehouseCategories { get; set; }
+        public int Actual { get; set; }
+
+    }
+
+   
 }

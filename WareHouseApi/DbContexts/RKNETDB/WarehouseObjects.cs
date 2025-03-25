@@ -7,7 +7,7 @@ namespace WareHouseApi.DbContexts.RKNETDB
     public class WarehouseObjects
     {
         [Key]
-        public string Id { get; set; }
+        public byte[] Id { get; set; }
         public WarehouseCategories WarehouseCategories { get; set; }
         public int Actual { get; set; }
     }

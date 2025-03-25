@@ -22,7 +22,7 @@ namespace WareHouseApi.Controllers
             List<WarehouseTransfer> warehouseTransfer = _rKNETDBContext.WarehouseTransfer.Include(c => c.WarehouseObjects)
                                                                                          .Include(c => c.WarehouseAction)
                                                                                          .Include(c => c.WarehouseObjects.WarehouseCategories)
-                                                                                         .Where(c => c.WarehouseObjects.Id == id)
+                                                                                         .Where(c => c.WarehouseObjects.Id == Global.ToCode(id))
                                                                                          .OrderBy(c => c.DateTime)
                                                                                          .ToList();
             List<ObjectHistoryJson> historyJson = new List<ObjectHistoryJson>();
@@ -33,8 +33,8 @@ namespace WareHouseApi.Controllers
                 objectHistoryJson.Id = item.Id;
                 objectHistoryJson.WarehouseObjects = item.WarehouseObjects;
                 objectHistoryJson.User = item.User;
-                objectHistoryJson.LocationStart = _rKNETDBContext.Location.FirstOrDefault(c => c.Guid == item.LocationStart)?.Name;
-                objectHistoryJson.LocationEnd = _rKNETDBContext.Location.FirstOrDefault(c => c.Guid == item.LocationEnd)?.Name;
+                objectHistoryJson.LocationStart = _rKNETDBContext.Locations.FirstOrDefault(c => c.Guid == item.LocationStart)?.Name;
+                objectHistoryJson.LocationEnd = _rKNETDBContext.Locations.FirstOrDefault(c => c.Guid == item.LocationEnd)?.Name;
                 objectHistoryJson.DateTime = item.DateTime;
                 objectHistoryJson.Comment = item.Comment;
                 objectHistoryJson.WarehouseAction = item.WarehouseAction;
@@ -50,7 +50,7 @@ namespace WareHouseApi.Controllers
             List<WarehouseTransfer> warehouseTransfer = _rKNETDBContext.WarehouseTransfer.Include(c => c.WarehouseObjects)
                                                                                          .Include(c => c.WarehouseAction)
                                                                                          .Include(c => c.WarehouseObjects.WarehouseCategories)
-                                                                                         .Where(c => c.WarehouseObjects.Id == id)
+                                                                                         .Where(c => c.WarehouseObjects.Id == Global.ToCode(id))
                                                                                          .OrderByDescending(c => c.Id)
                                                                                          .ToList();
             if (warehouseTransfer.Count == 0)
@@ -65,6 +65,19 @@ namespace WareHouseApi.Controllers
 
             return Ok(warehouseTransfer[0].LocationEnd);
         }
+
+
+
+        [HttpGet("GetAllLocations")]
+        // [Authorize]
+        public IActionResult GetAllLocations()
+        {
+            List<Location> Locations = _rKNETDBContext.Locations.OrderBy(c => c.Name).ToList();
+            return Ok(Locations );
+        }
+
+
+
 
         [HttpPut("SetObjectHistory")]
         public IActionResult SetObjectHistory(WarehouseTransfer warehouseTransfer)

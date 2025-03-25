@@ -74,8 +74,8 @@ namespace WareHouseApi.Controllers
             return Ok();
         }
 
-        [HttpPatch("UpdateCategoryParent")]
-        public IActionResult UpdateCategoryParent([FromBody] WarehouseCategories warehouseCategory)
+        [HttpPatch("UpdateCategory")]
+        public IActionResult UpdateCategory([FromBody] WarehouseCategories warehouseCategory)
         {
             if (warehouseCategory == null || warehouseCategory.Id == null)
             {

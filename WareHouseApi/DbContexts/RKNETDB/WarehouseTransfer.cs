@@ -14,6 +14,7 @@ namespace WareHouseApi.DbContexts.RKNETDB
         public Guid? LocationEnd { get; set; }
         public DateTime DateTime { get; set; }
         public string? Comment { get; set; }
+        public string? NewOwner { get; set; }
         public WarehouseAction WarehouseAction { get; set; }
     }
 }

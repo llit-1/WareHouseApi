@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
 
@@ -25,22 +27,7 @@ namespace WareHouseApi.Controllers
                                                                                          .Where(c => c.WarehouseObjects.Id == Global.ToCode(id))
                                                                                          .OrderBy(c => c.DateTime)
                                                                                          .ToList();
-            List<ObjectHistoryJson> historyJson = new List<ObjectHistoryJson>();
-
-            foreach (var item in warehouseTransfer)
-            {
-                ObjectHistoryJson objectHistoryJson = new ObjectHistoryJson();
-                objectHistoryJson.Id = item.Id;
-                objectHistoryJson.WarehouseObjects = item.WarehouseObjects;
-                objectHistoryJson.User = item.User;
-                objectHistoryJson.LocationStart = _rKNETDBContext.Locations.FirstOrDefault(c => c.Guid == item.LocationStart)?.Name;
-                objectHistoryJson.LocationEnd = _rKNETDBContext.Locations.FirstOrDefault(c => c.Guid == item.LocationEnd)?.Name;
-                objectHistoryJson.DateTime = item.DateTime;
-                objectHistoryJson.Comment = item.Comment;
-                objectHistoryJson.WarehouseAction = item.WarehouseAction;
-                historyJson.Add(objectHistoryJson);
-            }
-            return Ok(historyJson);
+            return Ok(warehouseTransfer);
         }
 
         [HttpGet("GetobjectLocation")]
@@ -67,7 +54,6 @@ namespace WareHouseApi.Controllers
         }
 
 
-
         [HttpGet("GetAllLocations")]
         // [Authorize]
         public IActionResult GetAllLocations()
@@ -79,30 +65,50 @@ namespace WareHouseApi.Controllers
 
 
 
-        [HttpPut("SetObjectHistory")]
-        public IActionResult SetObjectHistory(WarehouseTransfer warehouseTransfer)
+        [HttpPost("SetObjectHistory")]
+        public IActionResult SetObjectHistory([FromBody] List<ObjectHistoryJson> objectHistoryJson)
         {
-            if (warehouseTransfer == null)
+            List<WarehouseTransfer> warehouseTransfers = new();
+            foreach (var item in objectHistoryJson)
+            {
+                WarehouseObjects warehouseObject = _rKNETDBContext.WarehouseObjects.FirstOrDefault(x => x.Id == Global.ToCode(item.WarehouseObjectsId));
+                if (warehouseObject == null)
+                {
+                    return BadRequest(new { message = "объект отсутствует в БД" });
+                }
+                WarehouseTransfer warehouseTransfer = new();
+                warehouseTransfer.WarehouseObjects = warehouseObject;
+                warehouseTransfer.User = item.User;
+                warehouseTransfer.NewOwner = item.NewOwner;
+                warehouseTransfer.LocationStart = item.LocationStart;
+                warehouseTransfer.LocationEnd = item.LocationEnd;
+                warehouseTransfer.DateTime = item.DateTime;
+                warehouseTransfer.Comment = item.Comment;
+                warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(x => x.Id == item.WarehouseAction);
+                _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);                
+                if (item.NewOwner != null)
+                {
+                    warehouseObject.Owner = item.NewOwner;
+                }
+            }
+            if (objectHistoryJson == null)
             {
                 return BadRequest(new { message = "unavailable data" });
             }
-            _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);
             _rKNETDBContext.SaveChanges();
             return Ok();
         }
 
-
-
         public class ObjectHistoryJson
         {
-            public int Id { get; set; }
-            public WarehouseObjects WarehouseObjects { get; set; }
+            public string WarehouseObjectsId { get; set; }
             public string User { get; set; }
-            public string? LocationStart { get; set; }
-            public string? LocationEnd { get; set; }
+            public string? NewOwner { get; set; }
+            public Guid LocationStart { get; set; }
+            public Guid LocationEnd { get; set; }
             public DateTime DateTime { get; set; }
             public string? Comment { get; set; }
-            public WarehouseAction WarehouseAction { get; set; }
+            public int WarehouseAction { get; set; }
 
         }
 

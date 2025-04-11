@@ -25,9 +25,13 @@ namespace WareHouseApi.Controllers
         // [Authorize]
         public IActionResult GetObject(string id)
         {
+            if (id.Length!=24)
+            {
+                return BadRequest(new {message = "Неверная длина кода"});
+            }
             WarehouseObjects? warehouseObject = _rKNETDBContext.WarehouseObjects
                                                               .Include(c => c.WarehouseCategories)
-                                                              .FirstOrDefault();
+                                                              .FirstOrDefault(c => c.Id == Global.ToCode(id));
             warehouseObject.Id = null;
             return Ok(warehouseObject);
         }
@@ -40,7 +44,7 @@ namespace WareHouseApi.Controllers
             byte[] nextCode = new byte[12];
             if (warehouseObjects.Count == 0)
             {
-                return Ok(ArrToString(nextCode));
+                return File(nextCode, "application/octet-stream");
             }
             WarehouseObjects max = GetMaxByteArray(warehouseObjects);
             nextCode = max.Id;
@@ -51,8 +55,8 @@ namespace WareHouseApi.Controllers
                 {
                     break;
                 }
-            }           
-            return Ok(ArrToString(nextCode));
+            }
+            return File(nextCode, "application/octet-stream");
         }
 
         [HttpPost("SetObject")]
@@ -76,7 +80,7 @@ namespace WareHouseApi.Controllers
         {
             WarehouseObjects warehouseObject = warehouseObjects[0];
             List<WarehouseObjects> forRemove = new List<WarehouseObjects>();
-            for (int i = 11; i >= 0; i--)
+            for (int i = 0; i < 12; i++)
             {
                 foreach (var item in warehouseObjects)
                 {

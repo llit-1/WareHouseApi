@@ -10,5 +10,6 @@ namespace WareHouseApi.DbContexts.RKNETDB
         public byte[] Id { get; set; }
         public WarehouseCategories WarehouseCategories { get; set; }
         public int Actual { get; set; }
+        public string? Owner { get; set; }
     }
 }

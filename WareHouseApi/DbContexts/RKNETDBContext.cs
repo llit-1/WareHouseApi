@@ -20,7 +20,7 @@ namespace WareHouseApi.DbContexts
         public DbSet<WarehouseAction> WarehouseAction { get; set; } // Операции склада
         public DbSet<WarehouseObjects> WarehouseObjects { get; set; } // Объекты склада
         public DbSet<WarehouseTransfer> WarehouseTransfer { get; set; } // События склада
-
+        public DbSet<WarehouseHolder> WarehouseHolders { get; set; } // События склада
 
     }
 }

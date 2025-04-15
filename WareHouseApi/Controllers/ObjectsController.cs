@@ -101,21 +101,7 @@ namespace WareHouseApi.Controllers
                 }
             }
             return warehouseObjects[0];
-        }
-        private static string ArrToString(byte[] arr)
-        {
-            string ret = "";
-            foreach (var item in arr)
-            {
-                string number = item.ToString("X2");
-                if (number.Length == 1)
-                {
-                    number = "0" + number;
-                }
-                ret += number;
-            }
-            return ret;
-        }
+        }       
 
     }
     public class WarehouseObjectsJson

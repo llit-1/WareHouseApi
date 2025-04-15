@@ -79,16 +79,16 @@ namespace WareHouseApi.Controllers
                 WarehouseTransfer warehouseTransfer = new();
                 warehouseTransfer.WarehouseObjects = warehouseObject;
                 warehouseTransfer.User = item.User;
-                warehouseTransfer.NewOwner = item.NewOwner;
+                warehouseTransfer.NewHolderId = item.NewHolder;
                 warehouseTransfer.LocationStart = item.LocationStart;
                 warehouseTransfer.LocationEnd = item.LocationEnd;
                 warehouseTransfer.DateTime = item.DateTime;
                 warehouseTransfer.Comment = item.Comment;
                 warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(x => x.Id == item.WarehouseAction);
                 _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);                
-                if (item.NewOwner != null)
+                if (item.NewHolder != null)
                 {
-                    warehouseObject.Owner = item.NewOwner;
+                    warehouseObject.HolderId = item.NewHolder;
                 }
             }
             if (objectHistoryJson == null)
@@ -103,7 +103,7 @@ namespace WareHouseApi.Controllers
         {
             public string WarehouseObjectsId { get; set; }
             public string User { get; set; }
-            public string? NewOwner { get; set; }
+            public int? NewHolder { get; set; }
             public Guid LocationStart { get; set; }
             public Guid LocationEnd { get; set; }
             public DateTime DateTime { get; set; }

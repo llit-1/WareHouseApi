@@ -14,7 +14,12 @@ namespace WareHouseApi.DbContexts.RKNETDB
         public Guid? LocationEnd { get; set; }
         public DateTime DateTime { get; set; }
         public string? Comment { get; set; }
-        public string? NewOwner { get; set; }
+
+        [Column("NewHolder")] // Имя столбца в таблице WarehouseObjects
+        public int? NewHolderId { get; set; } 
+
+        [ForeignKey("NewHolderId")] // Указывает на свойство-внешний ключ
+        public WarehouseHolder? Holder { get; set; }
         public WarehouseAction WarehouseAction { get; set; }
     }
 }

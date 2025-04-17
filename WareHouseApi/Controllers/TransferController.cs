@@ -30,30 +30,6 @@ namespace WareHouseApi.Controllers
             return Ok(warehouseTransfer);
         }
 
-        [HttpGet("GetobjectLocation")]
-        // [Authorize]
-        public IActionResult GetObjectLocation(string id)
-        {
-            List<WarehouseTransfer> warehouseTransfer = _rKNETDBContext.WarehouseTransfer.Include(c => c.WarehouseObjects)
-                                                                                         .Include(c => c.WarehouseAction)
-                                                                                         .Include(c => c.WarehouseObjects.WarehouseCategories)
-                                                                                         .Where(c => c.WarehouseObjects.Id == Global.ToCode(id))
-                                                                                         .OrderByDescending(c => c.Id)
-                                                                                         .ToList();
-            if (warehouseTransfer.Count == 0)
-            {
-                return BadRequest(new { message = "unavailable id" });
-            }
-
-            if (warehouseTransfer[0].LocationEnd == null)
-            {
-                return Ok(null);
-            }
-
-            return Ok(warehouseTransfer[0].LocationEnd);
-        }
-
-
         [HttpGet("GetAllLocations")]
         // [Authorize]
         public IActionResult GetAllLocations()
@@ -61,9 +37,6 @@ namespace WareHouseApi.Controllers
             List<Location> Locations = _rKNETDBContext.Locations.OrderBy(c => c.Name).ToList();
             return Ok(Locations );
         }
-
-
-
 
         [HttpPost("SetObjectHistory")]
         public IActionResult SetObjectHistory([FromBody] List<ObjectHistoryJson> objectHistoryJson)
@@ -80,8 +53,8 @@ namespace WareHouseApi.Controllers
                 warehouseTransfer.WarehouseObjects = warehouseObject;
                 warehouseTransfer.User = item.User;
                 warehouseTransfer.NewHolderId = item.NewHolder;
-                warehouseTransfer.LocationStart = item.LocationStart;
-                warehouseTransfer.LocationEnd = item.LocationEnd;
+                warehouseTransfer.LocationGUID = item.Location;
+                warehouseObject.LocationGUID = item.Location;
                 warehouseTransfer.DateTime = item.DateTime;
                 warehouseTransfer.Comment = item.Comment;
                 warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(x => x.Id == item.WarehouseAction);
@@ -102,10 +75,9 @@ namespace WareHouseApi.Controllers
         public class ObjectHistoryJson
         {
             public string WarehouseObjectsId { get; set; }
+            public Guid Location { get; set; }
             public string User { get; set; }
             public int? NewHolder { get; set; }
-            public Guid LocationStart { get; set; }
-            public Guid LocationEnd { get; set; }
             public DateTime DateTime { get; set; }
             public string? Comment { get; set; }
             public int WarehouseAction { get; set; }

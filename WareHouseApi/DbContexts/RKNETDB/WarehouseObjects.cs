@@ -27,5 +27,11 @@ namespace WareHouseApi.DbContexts.RKNETDB
 
         [ForeignKey("HolderId")] // Указывает на свойство-внешний ключ
         public WarehouseHolder? Holder { get; set; } // Ссылка на запись в WarehouseHolders
+
+        [Column("Location")] 
+        public Guid? LocationGUID { get; set; }
+
+        [ForeignKey("LocationGUID")]
+        public Location? Location { get; set; }
     }
 }

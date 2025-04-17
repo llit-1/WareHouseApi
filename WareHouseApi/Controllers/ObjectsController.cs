@@ -31,6 +31,7 @@ namespace WareHouseApi.Controllers
             }
             WarehouseObjects? warehouseObject = _rKNETDBContext.WarehouseObjects
                                                               .Include(c => c.WarehouseCategories)
+                                                              .Include(c => c.Location)
                                                               .FirstOrDefault(c => c.Id == Global.ToCode(id));
             warehouseObject.Id = null;
             return Ok(warehouseObject);
@@ -72,7 +73,17 @@ namespace WareHouseApi.Controllers
             warehouseObject.WarehouseCategories = warehouseCategories;
             warehouseObject.Actual = 1;
             warehouseObject.Id = Global.ToCode(warehouseObjectsJson.Id);
+            warehouseObject.LocationGUID = Guid.Parse("C6C585F2-2825-4946-88A7-92CE7C97013C");
             _rKNETDBContext.WarehouseObjects.Add(warehouseObject);
+            WarehouseTransfer warehouseTransfer = new WarehouseTransfer();
+            warehouseTransfer.WarehouseObjects = warehouseObject;
+            warehouseTransfer.User = warehouseObjectsJson.User;
+            warehouseTransfer.LocationGUID = warehouseObject.LocationGUID;
+            warehouseTransfer.DateTime = DateTime.Now;
+            warehouseTransfer.Comment = null;
+            warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(c => c.Id == 1);
+            warehouseTransfer.NewHolderId = null;
+            _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);
             _rKNETDBContext.SaveChanges();
             return Ok();
         }
@@ -109,6 +120,7 @@ namespace WareHouseApi.Controllers
         public string Id { get; set; }
         public int WarehouseCategories { get; set; }
         public int Actual { get; set; }
+        public string User { get; set; }
 
     }
 

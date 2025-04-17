@@ -33,6 +33,20 @@ namespace WareHouseApi.Controllers
             return Ok(warehouseHolders);
         }
 
+        [HttpPost("PostHolder")]
+        // [Authorize]
+        public IActionResult PostHolder([FromBody] WarehouseHolder warehouseHolder)
+        {
+            if (warehouseHolder == null)
+            {
+                return BadRequest(new { message = "warehouseHolder is null" });
+            }
+            _rKNETDBContext.WarehouseHolders.Add(warehouseHolder);
+            _rKNETDBContext.SaveChanges();
+            return Ok();
+        }
+
+
 
     }
 }

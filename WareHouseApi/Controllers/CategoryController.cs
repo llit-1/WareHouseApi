@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Models.MSSQL;
-using System.Collections.Generic;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
 
@@ -20,10 +17,10 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("maincategories")]
-       // [Authorize]
+        // [Authorize]
         public IActionResult MainCategories()
         {
-            List<WarehouseCategories>  warehouseCategories = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == null).ToList();
+            List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == null).ToList();
             return Ok(warehouseCategories);
         }
 
@@ -55,11 +52,151 @@ namespace WareHouseApi.Controllers
                 if (category.Parent == id)
                 {
                     categoriesHierarchies.Add(GetRecursiveChild(category.Id.Value, warehouseCategories));
-                }               
+                }
             }
             return Ok(categoriesHierarchies);
         }
 
+        [HttpGet("GetLazyModel")]
+        public IActionResult GetLazyModel()
+        {
+            LazyModel lazyModel = new LazyModel();
+            lazyModel.Locations = _rKNETDBContext.Locations.ToList();
+            lazyModel.Holders = _rKNETDBContext.WarehouseHolders.ToList();
+            lazyModel.MainCategories = _rKNETDBContext.WarehouseCategories.Where(x => x.Parent == null).ToList();
+            foreach (var item in lazyModel.MainCategories)
+            {
+                item.Img = null;
+            }
+            return Ok(lazyModel);
+        }
+
+
+        [HttpGet("GetHardModel")]
+        public IActionResult GetHardModel(int? cathegory, int? holder, string? location)
+        {
+
+
+
+
+            Guid locationGuid = new();
+            if (location != null)
+            {
+                locationGuid = Guid.Parse(location);
+            }
+            List<WarehouseObjects> warehouseObjects = new List<WarehouseObjects>();
+            List<WarehouseCategories> warehouseCategories = new List<WarehouseCategories>();
+            List<Cat> catList = new List<Cat>();
+            if (cathegory != null)
+            {
+                WarehouseCategories warehouseCategoriesFirst = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == cathegory);
+                warehouseCategories.Add(warehouseCategoriesFirst);
+                List<WarehouseCategories> warehouseCategoriesSecond = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == cathegory).ToList();
+                warehouseCategories.AddRange(warehouseCategoriesSecond);
+                List<WarehouseCategories> warehouseCategoriesThird = new();
+                foreach (var item in warehouseCategoriesSecond)
+                {
+                    warehouseCategories.AddRange(_rKNETDBContext.WarehouseCategories.Where(c => c.Parent == item.Id));
+                }
+                var catIds = warehouseCategories.Select(c => c.Id).ToHashSet();
+                warehouseObjects.AddRange(_rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
+                                                                          .Include(c => c.Holder)
+                                                                          .Include(c => c.Location)
+                                                                          .Where(c => catIds.Contains(c.WarehouseCategoriesId)));
+                if (holder != null)
+                {
+                    warehouseObjects.RemoveAll(c => c.HolderId != holder);
+                }
+                if (location != null)
+                {
+                    warehouseObjects.RemoveAll(c => c.LocationGUID != locationGuid);
+                }
+            }
+            else if (holder != null)
+            {
+                warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
+                                                                   .Include(c => c.Holder)
+                                                                   .Include(c => c.Location)
+                                                                   .Where(c => c.HolderId == holder).ToList();
+                if (location != null)
+                {
+                    warehouseObjects.RemoveAll(c => c.LocationGUID != locationGuid);
+                }
+            }
+            else if (location != null)
+            {
+                warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
+                                                                   .Include(c => c.Holder)
+                                                                   .Include(c => c.Location)
+                                                                   .Where(c => c.LocationGUID == locationGuid).ToList();
+            }
+            else
+            {
+                warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
+                                                                  .Include(c => c.Holder)
+                                                                  .Include(c => c.Location).ToList();
+            }
+
+
+            foreach (var obj in warehouseObjects)
+            {
+                Item item = new Item();
+                item.code = Global.FromCode(obj.Id);
+                item.location = obj.Location;
+                item.warehouseHolder = obj.Holder;
+                WarehouseCategories first = obj.WarehouseCategories;
+                if (first.Parent == null)
+                {
+                    item.mainCat = first;
+                }
+                else
+                {
+                    WarehouseCategories second = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == first.Parent);
+                    if (second.Parent == null)
+                    {
+                        item.mainCat = second;
+                        item.cat = first;
+                    }
+                    else
+                    {
+                        item.mainCat = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == second.Parent);
+                        item.cat = second;
+                        item.secondCat = first;
+                    }
+                }
+                item.mainCat.Img = null;
+                Cat cat = catList.FirstOrDefault(c => c.mainCat.Id == item.mainCat.Id);
+                if (cat != null)
+                {
+                    cat.Items.Add(item);
+                    continue;
+                }
+                cat = new Cat();
+                cat.mainCat = item.mainCat;
+                cat.mainCat.Img = null;
+                cat.Items = new();
+                cat.Items.Add(item);
+                if (cathegory != null && item.mainCat.Id != cathegory)
+                {
+                    cat.cat = item.cat;
+                    if (_rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == cathegory).Parent != item.mainCat.Id)
+                    {
+                        cat.secondCat = item.secondCat;
+                    }
+                }
+                if (holder != null)
+                {
+                    cat.warehouseHolder = item.warehouseHolder;
+                }
+                if (location != null)
+                {
+                    cat.location = item.location;
+                }
+                catList.Add(cat);
+            }
+
+            return Ok(catList);
+        }
 
 
         [HttpPost("SetCategory")]
@@ -111,7 +248,7 @@ namespace WareHouseApi.Controllers
             {
                 SQLWarehouseCategory.Actual = 1;
             }
-         else if (SQLWarehouseCategory.Actual == 1)
+            else if (SQLWarehouseCategory.Actual == 1)
             {
                 SQLWarehouseCategory.Actual = 0;
             }
@@ -122,7 +259,7 @@ namespace WareHouseApi.Controllers
 
         [HttpDelete("DeleteCategory")]
         public IActionResult DeleteCategory(int id)
-        {            
+        {
             WarehouseCategories SQLWarehouseCategory = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == id);
             if (SQLWarehouseCategory == null)
             {
@@ -136,7 +273,7 @@ namespace WareHouseApi.Controllers
             }
             WarehouseObjects warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
                                                                                 .FirstOrDefault(c => c.WarehouseCategories.Id == id);
-            if (warehouseObjects!= null)
+            if (warehouseObjects != null)
             {
                 return BadRequest(new { message = "Category has Objects" });
             }
@@ -149,8 +286,8 @@ namespace WareHouseApi.Controllers
 
 
         private CategoriesHierarchy GetRecursiveChild(int id, List<WarehouseCategories> warehouseCategories)
-        { 
-         WarehouseCategories category = warehouseCategories.FirstOrDefault(c => c.Id == id);
+        {
+            WarehouseCategories category = warehouseCategories.FirstOrDefault(c => c.Id == id);
             CategoriesHierarchy categoriesHierarchy = new CategoriesHierarchy();
             categoriesHierarchy.Id = id;
             categoriesHierarchy.Name = category.Name;
@@ -170,6 +307,40 @@ namespace WareHouseApi.Controllers
             public string Name { get; set; } = "";
             public List<CategoriesHierarchy> Categories { get; set; } = new();
             public int Actual { get; set; }
+        }
+
+        private class LazyModel
+        {
+            public List<WarehouseHolder> Holders { get; set; }
+            public List<Location> Locations { get; set; }
+            public List<WarehouseCategories> MainCategories { get; set; }
+        }
+
+        private class Cat
+        {
+            public WarehouseCategories mainCat { get; set; }
+            public WarehouseCategories? cat { get; set; }
+            public WarehouseCategories? secondCat { get; set; }
+            public WarehouseHolder? warehouseHolder { get; set; }
+            public Location? location { get; set; }
+            public List<Item> Items { get; set; }
+        }
+
+        private class Item
+        {
+            public WarehouseCategories mainCat { get; set; }
+            public WarehouseCategories? cat { get; set; }
+            public WarehouseCategories? secondCat { get; set; }
+            public WarehouseHolder? warehouseHolder { get; set; }
+            public Location? location { get; set; }
+            public string code { get; set; }
+        }
+
+        private class JsonParemetrs
+        {
+            public int holderId { get; set; }
+            public int location { get; set; }
+
         }
     }
 }

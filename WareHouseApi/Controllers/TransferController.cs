@@ -59,10 +59,8 @@ namespace WareHouseApi.Controllers
                 warehouseTransfer.Comment = item.Comment;
                 warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(x => x.Id == item.WarehouseAction);
                 _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);                
-                if (item.NewHolder != null)
-                {
-                    warehouseObject.HolderId = item.NewHolder;
-                }
+                warehouseObject.HolderId = item.NewHolder;
+
             }
             if (objectHistoryJson == null)
             {
@@ -75,7 +73,7 @@ namespace WareHouseApi.Controllers
         public class ObjectHistoryJson
         {
             public string WarehouseObjectsId { get; set; }
-            public Guid Location { get; set; }
+            public Guid? Location { get; set; }
             public string User { get; set; }
             public int? NewHolder { get; set; }
             public DateTime DateTime { get; set; }

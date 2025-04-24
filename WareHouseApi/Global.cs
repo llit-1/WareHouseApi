@@ -15,9 +15,10 @@
             return charArray;
         }
 
-
-
-
+        public static string FromCode(byte[] bytes)
+        {
+            return BitConverter.ToString(bytes).Replace("-", "");
+        }
 
     }
 }

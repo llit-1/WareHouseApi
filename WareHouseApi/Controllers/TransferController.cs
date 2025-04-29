@@ -24,9 +24,15 @@ namespace WareHouseApi.Controllers
             List<WarehouseTransfer> warehouseTransfer = _rKNETDBContext.WarehouseTransfer.Include(c => c.WarehouseObjects)
                                                                                          .Include(c => c.WarehouseAction)
                                                                                          .Include(c => c.WarehouseObjects.WarehouseCategories)
+                                                                                         .Include(c => c.Location)
                                                                                          .Where(c => c.WarehouseObjects.Id == Global.ToCode(id))
                                                                                          .OrderBy(c => c.DateTime)
                                                                                          .ToList();
+            foreach (var item in warehouseTransfer)
+            {
+                item.WarehouseObjects.WarehouseCategories.Img = null;
+                item.WarehouseObjects.Id = null;
+            }
             return Ok(warehouseTransfer);
         }
 

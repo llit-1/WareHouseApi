@@ -73,7 +73,7 @@ namespace WareHouseApi.Controllers
             warehouseObject.WarehouseCategories = warehouseCategories;
             warehouseObject.Actual = 1;
             warehouseObject.Id = Global.ToCode(warehouseObjectsJson.Id);
-            warehouseObject.LocationGUID = Guid.Parse("C6C585F2-2825-4946-88A7-92CE7C97013C");
+            warehouseObject.LocationGUID = warehouseObjectsJson.Location;
             _rKNETDBContext.WarehouseObjects.Add(warehouseObject);
             WarehouseTransfer warehouseTransfer = new WarehouseTransfer();
             warehouseTransfer.WarehouseObjects = warehouseObject;
@@ -87,6 +87,36 @@ namespace WareHouseApi.Controllers
             _rKNETDBContext.SaveChanges();
             return Ok();
         }
+
+
+        [HttpDelete("WriteOffObject")]
+        // [Authorize]
+        public IActionResult WriteOffObject(string id, string user)
+        {
+
+            WarehouseObjects warehouseObject = _rKNETDBContext.WarehouseObjects.FirstOrDefault(c => c.Id.Equals(Global.ToCode(id)));
+            if (warehouseObject == null)
+            {
+                return BadRequest(new { message = "unavailable id" });
+            }
+            if (warehouseObject.Actual == 0)
+            {
+                return BadRequest(new { message = "объект уже списан" });
+            }
+            warehouseObject.LocationGUID = null;
+            warehouseObject.HolderId = null;
+            warehouseObject.Actual = 0;
+            WarehouseTransfer warehouseTransfer = new();
+            warehouseTransfer.WarehouseObjects = warehouseObject;
+            warehouseTransfer.User = user;
+            warehouseTransfer.DateTime = DateTime.Now;
+            warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(c => c.Id == 3);
+            _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);
+            _rKNETDBContext.SaveChanges();
+            return Ok();
+        }
+
+
         private WarehouseObjects GetMaxByteArray(List<WarehouseObjects> warehouseObjects)
         {
             WarehouseObjects warehouseObject = warehouseObjects[0];
@@ -121,6 +151,7 @@ namespace WareHouseApi.Controllers
         public int WarehouseCategories { get; set; }
         public int Actual { get; set; }
         public string User { get; set; }
+        public Guid Location { get; set; }
 
     }
 

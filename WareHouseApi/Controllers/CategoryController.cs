@@ -40,6 +40,17 @@ namespace WareHouseApi.Controllers
             return Ok(warehouseCategories);
         }
 
+        [HttpGet("getcategory")]
+        public IActionResult GetCategory(int id)
+        {
+            List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.Where(c => c.Id == id).ToList();
+            foreach (var item in warehouseCategories)
+            {
+                item.Img = null;
+            }
+            return Ok(warehouseCategories.FirstOrDefault());
+           
+        }
 
         [HttpGet("childCategories")]
         // [Authorize]

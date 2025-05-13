@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WareHouseApi.Controllers
 {
@@ -22,7 +23,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("GetObject")]
-        // [Authorize]
+        [Authorize]
         public IActionResult GetObject(string id)
         {
             if (id.Length!=24)
@@ -38,7 +39,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("GetNextCode")]
-        // [Authorize]
+        [Authorize]
         public IActionResult GetNextCode()
         {
             List<WarehouseObjects> warehouseObjects = _rKNETDBContext.WarehouseObjects.ToList();
@@ -61,7 +62,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpPost("SetObject")]
-        // [Authorize]
+        [Authorize]
         public IActionResult SetObject([FromBody] WarehouseObjectsJson warehouseObjectsJson)
         {
             WarehouseCategories? warehouseCategories = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id.Equals(warehouseObjectsJson.WarehouseCategories));
@@ -90,7 +91,7 @@ namespace WareHouseApi.Controllers
 
 
         [HttpDelete("WriteOffObject")]
-        // [Authorize]
+        [Authorize]
         public IActionResult WriteOffObject(string id, string user)
         {
 

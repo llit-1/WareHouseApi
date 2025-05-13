@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Portal.Models.MSSQL;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WareHouseApi.Controllers
 {
@@ -17,7 +18,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("maincategories")]
-        // [Authorize]
+        [Authorize]
         public IActionResult MainCategories()
         {
             List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == null).ToList();
@@ -25,7 +26,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("allactualcategories")]
-        // [Authorize]
+        [Authorize]
         public IActionResult AllActualCategories()
         {
             List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.Where(c => c.Actual != 0).ToList();
@@ -33,7 +34,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("allcategories")]
-        // [Authorize]
+        [Authorize]
         public IActionResult AllCategories()
         {
             List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.ToList();
@@ -41,6 +42,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("getcategory")]
+        [Authorize]
         public IActionResult GetCategory(int id)
         {
             List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.Where(c => c.Id == id).ToList();
@@ -51,9 +53,9 @@ namespace WareHouseApi.Controllers
             return Ok(warehouseCategories.FirstOrDefault());
            
         }
-
+        
         [HttpGet("childCategories")]
-        // [Authorize]
+        [Authorize]
         public IActionResult ChildCategories(int id)
         {
             List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.ToList();
@@ -69,6 +71,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("GetLazyModel")]
+        [Authorize]
         public IActionResult GetLazyModel()
         {
             LazyModel lazyModel = new LazyModel();
@@ -84,11 +87,9 @@ namespace WareHouseApi.Controllers
 
 
         [HttpGet("GetHardModel")]
-        public IActionResult GetHardModel(int? cathegory, int? holder, string? location)
+        [Authorize]
+        public IActionResult GetHardModel(int? cathegory, int? holder, string? location, int actual)
         {
-
-
-
 
             Guid locationGuid = new();
             if (location != null)
@@ -151,6 +152,10 @@ namespace WareHouseApi.Controllers
 
             foreach (var obj in warehouseObjects)
             {
+                if (obj.Actual != actual)
+                {
+                    continue;
+                }
                 Item item = new Item();
                 item.code = Global.FromCode(obj.Id);
                 item.location = obj.Location;
@@ -211,6 +216,7 @@ namespace WareHouseApi.Controllers
 
 
         [HttpPost("SetCategory")]
+        [Authorize]
         public IActionResult SetCategory([FromBody] WarehouseCategories warehouseCategory)
         {
             if (warehouseCategory == null || warehouseCategory.Id != null)
@@ -223,6 +229,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpPatch("UpdateCategory")]
+        [Authorize]
         public IActionResult UpdateCategory([FromBody] WarehouseCategories warehouseCategory)
         {
             if (warehouseCategory == null || warehouseCategory.Id == null)
@@ -244,6 +251,7 @@ namespace WareHouseApi.Controllers
 
 
         [HttpPatch("UpdateCategoryActual")]
+        [Authorize]
         public IActionResult UpdateCategoryActual(int? Id)
         {
             if (Id == null)
@@ -269,6 +277,7 @@ namespace WareHouseApi.Controllers
 
 
         [HttpDelete("DeleteCategory")]
+        [Authorize]
         public IActionResult DeleteCategory(int id)
         {
             WarehouseCategories SQLWarehouseCategory = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == id);

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Portal.Models.MSSQL;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WareHouseApi.Controllers
 {
@@ -18,7 +19,7 @@ namespace WareHouseApi.Controllers
 
 
         [HttpGet("GetHolder")]
-        // [Authorize]
+        [Authorize]
         public IActionResult GetHolder(int id)
         {
             WarehouseHolder warehouseHolder = _rKNETDBContext.WarehouseHolders.FirstOrDefault(x => x.Id == id);
@@ -26,7 +27,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("GetAllHolders")]
-        // [Authorize]
+        [Authorize]
         public IActionResult GetAllHolders()
         {
             List<WarehouseHolder> warehouseHolders = _rKNETDBContext.WarehouseHolders.OrderBy(x => x.Surname).ToList();
@@ -34,7 +35,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpPost("PostHolder")]
-        // [Authorize]
+        [Authorize]
         public IActionResult PostHolder([FromBody] WarehouseHolder warehouseHolder)
         {
             if (warehouseHolder == null)

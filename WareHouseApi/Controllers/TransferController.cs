@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WareHouseApi.Controllers
 {
@@ -18,13 +19,14 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("GetObjectHistory")]
-        // [Authorize]
+        [Authorize]
         public IActionResult GetObjectHistory(string id)
         {
             List<WarehouseTransfer> warehouseTransfer = _rKNETDBContext.WarehouseTransfer.Include(c => c.WarehouseObjects)
                                                                                          .Include(c => c.WarehouseAction)
                                                                                          .Include(c => c.WarehouseObjects.WarehouseCategories)
                                                                                          .Include(c => c.Location)
+                                                                                         .Include(c => c.Holder)
                                                                                          .Where(c => c.WarehouseObjects.Id == Global.ToCode(id))
                                                                                          .OrderBy(c => c.DateTime)
                                                                                          .ToList();
@@ -37,7 +39,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpGet("GetAllLocations")]
-        // [Authorize]
+        [Authorize]
         public IActionResult GetAllLocations()
         {
             List<Location> Locations = _rKNETDBContext.Locations.OrderBy(c => c.Name).ToList();
@@ -45,6 +47,7 @@ namespace WareHouseApi.Controllers
         }
 
         [HttpPost("SetObjectHistory")]
+        [Authorize]
         public IActionResult SetObjectHistory([FromBody] List<ObjectHistoryJson> objectHistoryJson)
         {
             List<WarehouseTransfer> warehouseTransfers = new();

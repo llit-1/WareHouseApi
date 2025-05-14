@@ -34,6 +34,14 @@ namespace WareHouseApi.Controllers
                                                               .Include(c => c.WarehouseCategories)
                                                               .Include(c => c.Location)
                                                               .FirstOrDefault(c => c.Id == Global.ToCode(id));
+            if (warehouseObject == null)
+            {
+                return NotFound();
+            }
+            if (warehouseObject.Actual == 0)
+            {
+                return BadRequest(new { message = "Данный объект уже списан"});
+            }
             warehouseObject.Id = null;
             return Ok(warehouseObject);
         }

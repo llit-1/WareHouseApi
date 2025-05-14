@@ -24,7 +24,7 @@ namespace WareHouseApi.Controllers
             string password = loginModel.Password;
             string login = loginModel.Login;
             if (password != "nothing is true everything is permitted" || login != "assassin")
-            {
+            { 
                 return Unauthorized(new { message = "Данные введены некорректно!" });
             }
             return Ok(GetToken(login));

@@ -90,6 +90,10 @@ namespace WareHouseApi.Controllers
             warehouseTransfer.LocationGUID = warehouseObject.LocationGUID;
             warehouseTransfer.DateTime = DateTime.Now;
             warehouseTransfer.Comment = null;
+            if (!string.IsNullOrEmpty(warehouseObjectsJson.CommentText))
+            {
+                warehouseTransfer.Comment = warehouseObjectsJson.CommentText;
+            }            
             warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(c => c.Id == 1);
             warehouseTransfer.NewHolderId = null;
             _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);
@@ -128,30 +132,28 @@ namespace WareHouseApi.Controllers
 
         private WarehouseObjects GetMaxByteArray(List<WarehouseObjects> warehouseObjects)
         {
-            WarehouseObjects warehouseObject = warehouseObjects[0];
-            List<WarehouseObjects> forRemove = new List<WarehouseObjects>();
-            for (int i = 0; i < 12; i++)
+            WarehouseObjects max = warehouseObjects[0];
+
+            foreach (var item in warehouseObjects)
             {
-                foreach (var item in warehouseObjects)
+                if (CompareByteArrays(item.Id, max.Id) > 0)
                 {
-                    if (item.Id[i] < warehouseObject.Id[i])
-                    {
-                        forRemove.Add(item);
-                    }
-                    if (item.Id[i] > warehouseObject.Id[i])
-                    {
-                        forRemove.Add(warehouseObject);
-                        warehouseObject = item;
-                    }
-                }
-                warehouseObjects.RemoveAll(u => forRemove.Contains(u));
-                if (warehouseObjects.Count == 1)
-                {
-                    return warehouseObjects[0];
+                    max = item;
                 }
             }
-            return warehouseObjects[0];
-        }       
+
+            return max;
+        }
+
+        private int CompareByteArrays(byte[] a, byte[] b)
+        {
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] > b[i]) return 1;
+                if (a[i] < b[i]) return -1;
+            }
+            return 0; // одинаковы
+        }
 
     }
     public class WarehouseObjectsJson
@@ -161,6 +163,7 @@ namespace WareHouseApi.Controllers
         public int Actual { get; set; }
         public string User { get; set; }
         public Guid Location { get; set; }
+        public string CommentText { get; set; }
 
     }
 

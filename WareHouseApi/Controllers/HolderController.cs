@@ -46,8 +46,5 @@ namespace WareHouseApi.Controllers
             _rKNETDBContext.SaveChanges();
             return Ok();
         }
-
-
-
     }
 }

@@ -27,10 +27,8 @@ namespace WareHouseApi.Controllers
             { 
                 return Unauthorized(new { message = "Данные введены некорректно!" });
             }
-            return Ok(GetToken(login));
+            return Ok(GetToken(login + DateTime.Now.ToString()));
         }
-
-
 
         public class LoginModel
         {
@@ -56,8 +54,5 @@ namespace WareHouseApi.Controllers
             string? token = tokenHandler.WriteToken(tok);
             return token;
         }
-
-
-
     }
 }

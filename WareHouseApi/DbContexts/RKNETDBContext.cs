@@ -21,6 +21,8 @@ namespace WareHouseApi.DbContexts
         public DbSet<WarehouseObjects> WarehouseObjects { get; set; } // Объекты склада
         public DbSet<WarehouseTransfer> WarehouseTransfer { get; set; } // События склада
         public DbSet<WarehouseHolder> WarehouseHolders { get; set; } // События склада
+        public DbSet<WarehouseInventorization> WarehouseInventorization { get; set; } // Инвенторизация
+        public DbSet<WarehouseInventorizationItem> WarehouseInventorizationItem { get; set; } //Объект инвенторизации
 
     }
 }

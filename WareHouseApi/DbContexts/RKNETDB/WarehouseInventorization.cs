@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Portal.Models.MSSQL;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WareHouseApi.DbContexts.RKNETDB
@@ -12,13 +13,20 @@ namespace WareHouseApi.DbContexts.RKNETDB
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        // FK -> Locations.GUID
+        [Column("WarehouseCategories")] // uniqueidentifier NOT NULL
+        public int? WarehouseCategoriesId { get; set; }
+
+        [ForeignKey(nameof(WarehouseCategoriesId))]
+        public WarehouseCategories WarehouseCategories { get; set; } = null!;
+
+
         [Column("Location")] // uniqueidentifier NOT NULL
         public Guid LocationGuid { get; set; }
 
         // Навигация к Location (класс Location должен существовать в модели)
         [ForeignKey(nameof(LocationGuid))]
         public Location Location { get; set; } = null!;
+
 
         // Дата/время инвентаризации
         [Column("Datetime")]

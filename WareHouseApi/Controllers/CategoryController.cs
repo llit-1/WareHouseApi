@@ -64,7 +64,7 @@ namespace WareHouseApi.Controllers
             {
                 if (category.Parent == id)
                 {
-                    categoriesHierarchies.Add(GetRecursiveChild(category.Id.Value, warehouseCategories));
+                    categoriesHierarchies.Add(GetRecursiveChild(category.Id, warehouseCategories));
                 }
             }
             return Ok(categoriesHierarchies);
@@ -316,7 +316,7 @@ namespace WareHouseApi.Controllers
             List<WarehouseCategories> children = warehouseCategories.Where(c => c.Parent == id).ToList();
             foreach (var item in children)
             {
-                categoriesHierarchy.Categories.Add(GetRecursiveChild(item.Id.Value, warehouseCategories));
+                categoriesHierarchy.Categories.Add(GetRecursiveChild(item.Id, warehouseCategories));
             }
             return categoriesHierarchy;
         }

@@ -2,9 +2,12 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
 using static WareHouseApi.Controllers.AuthorizationController;
+using Portal.Models.MSSQL;
 
 namespace WareHouseApi.Controllers
 {
@@ -22,14 +25,53 @@ namespace WareHouseApi.Controllers
         [HttpGet("GetInventorization")]
         public IActionResult GetInventorization()
         {
-            List<WarehouseInventorization> warehouseInventorization = _rKNETDBContext.WarehouseInventorization.Include(x => x.Items)
-                                                                                                              .ThenInclude(item => item.WarehouseObject)
-                                                                                                              .ThenInclude(WarehouseObject => WarehouseObject.WarehouseCategories).ToList();
-
-            return Ok(warehouseInventorization);
+            List<WarehouseInventorization> warehouseInventorization = _rKNETDBContext.WarehouseInventorization.Include(x => x.Location).ToList();
+            List<InventarizationModel> inventarizationModels = new();
+            foreach (var item in warehouseInventorization)
+            {
+                InventarizationModel inventarizationModel = new();
+                inventarizationModel.Id = item.Id;
+                inventarizationModel.LocationGuid = item.LocationGuid;
+                inventarizationModel.Location = item.Location.Name;
+                inventarizationModel.Datetime = item.Datetime;
+                inventarizationModel.Person = item.Person;
+                inventarizationModel.Status = item.Status;
+                inventarizationModels.Add(inventarizationModel);
+            }
+            List<InventarizationModel> sortedModels = inventarizationModels.OrderByDescending(x => x.Datetime).ToList();
+            return Ok(sortedModels);
         }
 
+        [Authorize]
+        [HttpGet("GetInventorizationItems")]
+        public IActionResult GetInventorizationItems(int Id)
+        {
+            List<WarehouseInventorizationItem> warehouseInventorizationItems = _rKNETDBContext.WarehouseInventorizationItem.Include(x => x.WarehouseObject)
+                                                                                                                           .ThenInclude(o => o.Holder)
+                                                                                                                           .Where(x => x.WarehouseInventorizationId == Id).ToList();
+                                                                                                                           
 
+
+            List<InventarizationItemModel> inventarizationItemModels = new();
+            foreach (var item in warehouseInventorizationItems)
+            {
+                InventarizationItemModel inventarizationItemModel = new();
+                inventarizationItemModel.Id = item.Id;
+                WarehouseCategories category = _rKNETDBContext.WarehouseCategories.FirstOrDefault(x => x.Id == item.WarehouseObject.WarehouseCategoriesId);
+                WarehouseCategories midCategory = _rKNETDBContext.WarehouseCategories.FirstOrDefault(x => x.Id == category.Parent);
+                WarehouseCategories mainCategory = _rKNETDBContext.WarehouseCategories.FirstOrDefault(x => x.Id == midCategory.Parent);
+                inventarizationItemModel.Obj = Global.FromCode(item.ObjectId);
+                inventarizationItemModel.ObjectName = category.Name;
+                inventarizationItemModel.ObjectCategory = mainCategory.Name;
+                if (item.WarehouseObject.Holder != null)
+                {
+                    inventarizationItemModel.Holder = item.WarehouseObject.Holder.Surname + " " + item.WarehouseObject.Holder.Name;
+                }                
+                inventarizationItemModel.Detected = item.Detected;
+                inventarizationItemModels.Add(inventarizationItemModel);
+            }
+            return Ok(inventarizationItemModels);
+        }
 
 
 
@@ -42,8 +84,18 @@ namespace WareHouseApi.Controllers
                 return BadRequest(new { message = "Неверные данные" });
             }
             WarehouseInventorization warehouseInventorization = new WarehouseInventorization(createModel.Person, createModel.Location);
-
-            List<WarehouseObjects> warehouseObjects = _rKNETDBContext.WarehouseObjects.Where(x => x.LocationGUID == createModel.Location).ToList();
+            warehouseInventorization.WarehouseCategoriesId = createModel.WarehouseCategoriesId;
+            List<WarehouseObjects> warehouseObjects = new();
+                if (createModel.WarehouseCategoriesId != null)
+            {
+                List<int> companies = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == createModel.WarehouseCategoriesId).Select(c => c.Id).ToList();
+                List<int> objectNames = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent != null && companies.Contains(c.Parent.Value)).Select(c => c.Id).ToList();
+                warehouseObjects = _rKNETDBContext.WarehouseObjects.Where(x => x.LocationGUID == createModel.Location && objectNames.Contains(x.WarehouseCategoriesId)).ToList();
+            }
+            else
+            {
+                warehouseObjects = _rKNETDBContext.WarehouseObjects.Where(x => x.LocationGUID == createModel.Location).ToList();
+            }            
             foreach (var item in warehouseObjects)
             {
                 WarehouseInventorizationItem warehouseInventorizationItem = new WarehouseInventorizationItem();
@@ -100,9 +152,30 @@ namespace WareHouseApi.Controllers
         {
             public Guid Location { get; set; }
             public string Person { get; set; }
+            public int? WarehouseCategoriesId { get; set; }
 
         }
 
+        public class InventarizationModel
+        {
+            public int Id { get; set; }
+            public Guid LocationGuid { get; set; }
+            public string Location { get; set; } = string.Empty;
+            public DateTime Datetime { get; set; }
+            public string Person { get; set; } = string.Empty;
+            public int Status { get; set; }
 
+        }
+
+        public class InventarizationItemModel
+        {
+            public int Id { get; set; }
+            public string Obj { get; set; } = string.Empty ;
+            public string ObjectName { get; set; } = string.Empty;
+            public string ObjectCategory { get; set; } = string.Empty;
+            public string? Holder { get; set; }
+            public bool Detected { get; set; }
+
+        }
     }
 }

@@ -19,9 +19,16 @@ namespace WareHouseApi.Controllers
 
         [HttpGet("maincategories")]
         [Authorize]
-        public IActionResult MainCategories()
+        public IActionResult MainCategories(int? img)
         {
             List<WarehouseCategories> warehouseCategories = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == null).ToList();
+            if (img != null)
+            {
+                foreach (var item in warehouseCategories)
+                {
+                    item.Img = null;
+                }
+            }
             return Ok(warehouseCategories);
         }
 

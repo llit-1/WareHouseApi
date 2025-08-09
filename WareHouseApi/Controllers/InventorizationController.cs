@@ -146,7 +146,34 @@ namespace WareHouseApi.Controllers
             return Ok(2);
         }
 
-
+        [Authorize]
+        [HttpGet("StandingCheck")]
+        public IActionResult StandingCheck(string mark, string location)
+        {
+            byte[] markBit = Global.ToCode(mark);
+            Guid locationGuid = Guid.Parse(location);
+            StandingCheckModel standingCheckModel = new();
+            WarehouseObjects? warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(x => x.Holder)
+                                                                                 .Include(x => x.WarehouseCategories)
+                                                                                 .Include(x => x.Location)
+                                                                                 .FirstOrDefault(c => c.Id == markBit);
+            if (warehouseObjects == null)
+            {
+                return BadRequest(new { message = "Объекта нет в БД" });
+            }
+            WarehouseCategories company = _rKNETDBContext.WarehouseCategories.FirstOrDefault(x => x.Id == warehouseObjects.WarehouseCategories.Parent);
+            WarehouseCategories category = _rKNETDBContext.WarehouseCategories.FirstOrDefault(x => x.Id == company.Parent);
+            standingCheckModel.Obj = mark;
+            standingCheckModel.ObjectCategory = category.Name;
+            standingCheckModel.ObjectName = warehouseObjects.WarehouseCategories.Name;
+            if (warehouseObjects.Holder != null)
+            {
+                standingCheckModel.Holder = warehouseObjects.Holder.Surname + " " + warehouseObjects.Holder.Name;
+            }         
+            standingCheckModel.OnPlace = (warehouseObjects.LocationGUID == locationGuid);
+            standingCheckModel.Location = warehouseObjects.Location?.Name;
+            return Ok(standingCheckModel);
+        }
 
         public class CreateModel
         {
@@ -176,6 +203,16 @@ namespace WareHouseApi.Controllers
             public string? Holder { get; set; }
             public bool Detected { get; set; }
 
+        }
+
+        public class StandingCheckModel
+        {
+            public string Obj { get; set; } = string.Empty;
+            public string ObjectName { get; set; } = string.Empty;
+            public string ObjectCategory { get; set; } = string.Empty;
+            public string? Holder { get; set; }
+            public string? Location { get; set; }
+            public bool OnPlace { get; set; }
         }
     }
 }

@@ -312,7 +312,7 @@ namespace WareHouseApi.Controllers
 
 
 
-        private CategoriesHierarchy GetRecursiveChild(int id, List<WarehouseCategories> warehouseCategories)
+        private CategoriesHierarchy GetRecursiveChild(int? id, List<WarehouseCategories> warehouseCategories)
         {
             WarehouseCategories category = warehouseCategories.FirstOrDefault(c => c.Id == id);
             CategoriesHierarchy categoriesHierarchy = new CategoriesHierarchy();
@@ -330,7 +330,7 @@ namespace WareHouseApi.Controllers
 
         private class CategoriesHierarchy
         {
-            public int Id { get; set; }
+            public int? Id { get; set; }
             public string Name { get; set; } = "";
             public List<CategoriesHierarchy> Categories { get; set; } = new();
             public int Actual { get; set; }

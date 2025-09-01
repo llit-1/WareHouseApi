@@ -86,10 +86,10 @@ namespace WareHouseApi.Controllers
             WarehouseInventorization warehouseInventorization = new WarehouseInventorization(createModel.Person, createModel.Location);
             warehouseInventorization.WarehouseCategoriesId = createModel.WarehouseCategoriesId;
             List<WarehouseObjects> warehouseObjects = new();
-                if (createModel.WarehouseCategoriesId != null)
+            if (createModel.WarehouseCategoriesId != null)
             {
-                List<int> companies = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == createModel.WarehouseCategoriesId).Select(c => c.Id).ToList();
-                List<int> objectNames = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent != null && companies.Contains(c.Parent.Value)).Select(c => c.Id).ToList();
+                List<int?> companies = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == createModel.WarehouseCategoriesId).Select(c => c.Id).ToList();
+                List<int?> objectNames = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent != null && companies.Contains(c.Parent.Value)).Select(c => c.Id).ToList();
                 warehouseObjects = _rKNETDBContext.WarehouseObjects.Where(x => x.LocationGUID == createModel.Location && objectNames.Contains(x.WarehouseCategoriesId)).ToList();
             }
             else

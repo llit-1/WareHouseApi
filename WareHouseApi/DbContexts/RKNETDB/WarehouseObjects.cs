@@ -33,5 +33,8 @@ namespace WareHouseApi.DbContexts.RKNETDB
 
         [ForeignKey("LocationGUID")]
         public Location? Location { get; set; }
+
+        [Column("StringId")]
+        public String? StringId { get; set; }
     }
 }

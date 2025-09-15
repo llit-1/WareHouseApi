@@ -83,6 +83,7 @@ namespace WareHouseApi.Controllers
             warehouseObject.Actual = 1;
             warehouseObject.Id = Global.ToCode(warehouseObjectsJson.Id);
             warehouseObject.LocationGUID = warehouseObjectsJson.Location;
+            warehouseObject.StringId = warehouseObjectsJson.Id.TrimStart('0');
             _rKNETDBContext.WarehouseObjects.Add(warehouseObject);
             WarehouseTransfer warehouseTransfer = new WarehouseTransfer();
             warehouseTransfer.WarehouseObjects = warehouseObject;

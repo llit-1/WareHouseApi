@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Portal.Models.MSSQL;
 using WareHouseApi.DbContexts;
 using WareHouseApi.DbContexts.RKNETDB;
-using Microsoft.AspNetCore.Authorization;
 
 namespace WareHouseApi.Controllers
 {
@@ -58,9 +58,9 @@ namespace WareHouseApi.Controllers
                 item.Img = null;
             }
             return Ok(warehouseCategories.FirstOrDefault());
-           
+
         }
-        
+
         [HttpGet("childCategories")]
         [Authorize]
         public IActionResult ChildCategories(int id)
@@ -93,24 +93,22 @@ namespace WareHouseApi.Controllers
         }
 
 
-        [HttpGet("GetHardModel")]
+        [HttpPost("GetHardModel")]
         [Authorize]
-        public IActionResult GetHardModel(int? cathegory, int? holder, string? location, int actual)
+        public IActionResult GetHardModel([FromBody] HardModel hardModel)
         {
-
-            Guid locationGuid = new();
-            if (location != null)
+            if (hardModel is null)
             {
-                locationGuid = Guid.Parse(location);
+                return BadRequest(new { message = "hardModel is null" });
             }
             List<WarehouseObjects> warehouseObjects = new List<WarehouseObjects>();
             List<WarehouseCategories> warehouseCategories = new List<WarehouseCategories>();
             List<Cat> catList = new List<Cat>();
-            if (cathegory != null)
+            if (hardModel.cathegory != null)
             {
-                WarehouseCategories warehouseCategoriesFirst = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == cathegory);
+                WarehouseCategories warehouseCategoriesFirst = _rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == hardModel.cathegory);
                 warehouseCategories.Add(warehouseCategoriesFirst);
-                List<WarehouseCategories> warehouseCategoriesSecond = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == cathegory).ToList();
+                List<WarehouseCategories> warehouseCategoriesSecond = _rKNETDBContext.WarehouseCategories.Where(c => c.Parent == hardModel.cathegory).ToList();
                 warehouseCategories.AddRange(warehouseCategoriesSecond);
                 List<WarehouseCategories> warehouseCategoriesThird = new();
                 foreach (var item in warehouseCategoriesSecond)
@@ -122,32 +120,18 @@ namespace WareHouseApi.Controllers
                                                                           .Include(c => c.Holder)
                                                                           .Include(c => c.Location)
                                                                           .Where(c => catIds.Contains(c.WarehouseCategoriesId)));
-                if (holder != null)
+                if (hardModel.holder != null)
                 {
-                    warehouseObjects.RemoveAll(c => c.HolderId != holder);
+                    warehouseObjects.RemoveAll(c => c.HolderId != hardModel.holder);
                 }
-                if (location != null)
-                {
-                    warehouseObjects.RemoveAll(c => c.LocationGUID != locationGuid);
-                }
+
             }
-            else if (holder != null)
+            else if (hardModel.holder != null)
             {
                 warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
                                                                    .Include(c => c.Holder)
                                                                    .Include(c => c.Location)
-                                                                   .Where(c => c.HolderId == holder).ToList();
-                if (location != null)
-                {
-                    warehouseObjects.RemoveAll(c => c.LocationGUID != locationGuid);
-                }
-            }
-            else if (location != null)
-            {
-                warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
-                                                                   .Include(c => c.Holder)
-                                                                   .Include(c => c.Location)
-                                                                   .Where(c => c.LocationGUID == locationGuid).ToList();
+                                                                   .Where(c => c.HolderId == hardModel.holder).ToList();
             }
             else
             {
@@ -156,10 +140,14 @@ namespace WareHouseApi.Controllers
                                                                   .Include(c => c.Location).ToList();
             }
 
+            if (hardModel.locationGuids != null)
+            {
+                warehouseObjects.RemoveAll(c => c.LocationGUID == null || !hardModel.locationGuids.Contains(c.LocationGUID.Value));
+            }
 
             foreach (var obj in warehouseObjects)
             {
-                if (obj.Actual != actual)
+                if (obj.Actual != hardModel.actual)
                 {
                     continue;
                 }
@@ -199,19 +187,19 @@ namespace WareHouseApi.Controllers
                 cat.mainCat.Img = null;
                 cat.Items = new();
                 cat.Items.Add(item);
-                if (cathegory != null && item.mainCat.Id != cathegory)
+                if (hardModel.cathegory != null && item.mainCat.Id != hardModel.cathegory)
                 {
                     cat.cat = item.cat;
-                    if (_rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == cathegory).Parent != item.mainCat.Id)
+                    if (_rKNETDBContext.WarehouseCategories.FirstOrDefault(c => c.Id == hardModel.cathegory).Parent != item.mainCat.Id)
                     {
                         cat.secondCat = item.secondCat;
                     }
                 }
-                if (holder != null)
+                if (hardModel.holder != null)
                 {
                     cat.warehouseHolder = item.warehouseHolder;
                 }
-                if (location != null)
+                if (hardModel.locationGuids != null)
                 {
                     cat.location = item.location;
                 }
@@ -369,5 +357,14 @@ namespace WareHouseApi.Controllers
             public int location { get; set; }
 
         }
+
+        public class HardModel
+        {
+            public int? cathegory { get; set; }
+            public int? holder { get; set; }
+            public List<Guid>? locationGuids { get; set; }
+            public int actual { get; set; }
+        }
+
     }
 }

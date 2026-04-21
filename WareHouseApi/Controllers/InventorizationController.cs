@@ -156,7 +156,7 @@ namespace WareHouseApi.Controllers
             WarehouseObjects? warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(x => x.Holder)
                                                                                  .Include(x => x.WarehouseCategories)
                                                                                  .Include(x => x.Location)
-                                                                                 .FirstOrDefault(c => c.Id == markBit);
+                                                                                 .FirstOrDefault(c => c.Id == markBit && c.Actual == 1);
             if (warehouseObjects == null)
             {
                 return BadRequest(new { message = "Объекта нет в БД" });

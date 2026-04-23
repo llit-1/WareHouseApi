@@ -94,7 +94,7 @@ namespace WareHouseApi.Controllers
 
 
         [HttpPost("GetHardModel")]
-        [Authorize]
+        //[Authorize]
         public IActionResult GetHardModel([FromBody] HardModel hardModel)
         {
             if (hardModel is null)
@@ -125,6 +125,11 @@ namespace WareHouseApi.Controllers
                     warehouseObjects.RemoveAll(c => c.HolderId != hardModel.holder);
                 }
 
+                if (hardModel.locationGuids != null)
+                {
+                    warehouseObjects.RemoveAll(c => c.LocationGUID == null || !hardModel.locationGuids.Contains(c.LocationGUID.Value));
+                }
+
             }
             else if (hardModel.holder != null)
             {
@@ -132,18 +137,25 @@ namespace WareHouseApi.Controllers
                                                                    .Include(c => c.Holder)
                                                                    .Include(c => c.Location)
                                                                    .Where(c => c.HolderId == hardModel.holder).ToList();
+
+                if (hardModel.locationGuids != null)
+                {
+                    warehouseObjects.RemoveAll(c => c.LocationGUID == null || !hardModel.locationGuids.Contains(c.LocationGUID.Value));
+                }
             }
             else
             {
                 warehouseObjects = _rKNETDBContext.WarehouseObjects.Include(c => c.WarehouseCategories)
                                                                   .Include(c => c.Holder)
                                                                   .Include(c => c.Location).ToList();
+
+                if (hardModel.locationGuids != null)
+                {
+                    warehouseObjects.RemoveAll(c => c.LocationGUID == null || !hardModel.locationGuids.Contains(c.LocationGUID.Value));
+                }
             }
 
-            if (hardModel.locationGuids != null)
-            {
-                warehouseObjects.RemoveAll(c => c.LocationGUID == null || !hardModel.locationGuids.Contains(c.LocationGUID.Value));
-            }
+            
 
             foreach (var obj in warehouseObjects)
             {

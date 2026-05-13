@@ -105,10 +105,10 @@ namespace WareHouseApi.Controllers
 
         [HttpDelete("WriteOffObject")]
         [Authorize]
-        public IActionResult WriteOffObject(string id, string user)
+        public IActionResult WriteOffObject([FromBody]WriteOffModel writeOffModel)
         {
 
-            WarehouseObjects warehouseObject = _rKNETDBContext.WarehouseObjects.FirstOrDefault(c => c.Id.Equals(Global.ToCode(id)));
+            WarehouseObjects warehouseObject = _rKNETDBContext.WarehouseObjects.FirstOrDefault(c => c.Id.Equals(Global.ToCode(writeOffModel.Id)));
             if (warehouseObject == null)
             {
                 return BadRequest(new { message = "unavailable id" });
@@ -122,7 +122,8 @@ namespace WareHouseApi.Controllers
             warehouseObject.Actual = 0;
             WarehouseTransfer warehouseTransfer = new();
             warehouseTransfer.WarehouseObjects = warehouseObject;
-            warehouseTransfer.User = user;
+            warehouseTransfer.User = writeOffModel.User;
+            warehouseTransfer.Comment = writeOffModel.Comment;
             warehouseTransfer.DateTime = DateTime.Now;
             warehouseTransfer.WarehouseAction = _rKNETDBContext.WarehouseAction.FirstOrDefault(c => c.Id == 3);
             _rKNETDBContext.WarehouseTransfer.Add(warehouseTransfer);
@@ -168,5 +169,13 @@ namespace WareHouseApi.Controllers
 
     }
 
-   
+
+    public class WriteOffModel
+    {
+        public string Id { get; set; }
+        public string User { get; set; }
+        public string Comment { get; set; }
+    }
+
+
 }

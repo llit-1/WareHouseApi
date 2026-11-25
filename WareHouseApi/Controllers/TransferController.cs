@@ -38,6 +38,66 @@ namespace WareHouseApi.Controllers
             return Ok(warehouseTransfer);
         }
 
+        private const int LastCommentsChunkSize = 500;
+        private const int LastCommentsMaxCodes = 20000;
+
+        // Комментарии последних трансферов для списка объектов: один запрос вместо истории на каждый объект.
+        // Метод возвращает только комментарии, а не сами объекты: список объектов поиск получает из GetHardModel.
+        // Если в последнем трансфере объекта комментария нет, строки для этого кода в ответе нет,
+        // и у объекта в таблице просто пустая ячейка. Комментарии из более старых трансферов не берутся.
+        [HttpPost("GetLastComments")]
+        [Authorize]
+        public IActionResult GetLastComments([FromBody] List<string>? codes)
+        {
+            if (codes is null)
+            {
+                return BadRequest(new { message = "unavailable data" });
+            }
+
+            var normalized = codes
+                .Where(code => code is not null && code.Length == 24 && code.All(Uri.IsHexDigit))
+                .Select(code => code.ToUpperInvariant())
+                .Distinct()
+                .ToList();
+            if (normalized.Count > LastCommentsMaxCodes)
+            {
+                return BadRequest(new { message = $"не больше {LastCommentsMaxCodes} кодов за запрос" });
+            }
+
+            var result = new List<LastCommentJson>(normalized.Count);
+            foreach (var chunk in normalized.Chunk(LastCommentsChunkSize))
+            {
+                // Коды встраиваются в SQL литералами: коллекция varbinary-параметров через OPENJSON не транслируется.
+                var ids = chunk.Select(Global.ToCode).ToList();
+                var rows = _rKNETDBContext.WarehouseTransfer.AsNoTracking()
+                    .Where(c => EF.Constant(ids).Contains(c.WarehouseObjects.Id))
+                    .Select(c => new { ObjectId = c.WarehouseObjects.Id, c.Id, c.Comment, c.User, c.DateTime })
+                    .ToList();
+
+                result.AddRange(rows
+                    .GroupBy(row => Global.FromCode(row.ObjectId))
+                    .Select(group => group.OrderByDescending(row => row.DateTime).ThenByDescending(row => row.Id).First())
+                    .Where(row => !string.IsNullOrWhiteSpace(row.Comment))
+                    .Select(row => new LastCommentJson
+                    {
+                        Code = Global.FromCode(row.ObjectId),
+                        Comment = row.Comment!.Trim(),
+                        User = row.User,
+                        DateTime = row.DateTime,
+                    }));
+            }
+
+            return Ok(result);
+        }
+
+        public class LastCommentJson
+        {
+            public string Code { get; set; } = "";
+            public string Comment { get; set; } = "";
+            public string? User { get; set; }
+            public DateTime DateTime { get; set; }
+        }
+
         [HttpGet("GetAllLocations")]
         [Authorize]
         public IActionResult GetAllLocations()
